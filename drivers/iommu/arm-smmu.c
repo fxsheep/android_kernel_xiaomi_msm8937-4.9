@@ -1642,7 +1642,7 @@ static int arm_smmu_set_pt_format(struct arm_smmu_domain *smmu_domain,
 	if ((smmu->version > ARM_SMMU_V1) &&
 	    (cfg->fmt == ARM_SMMU_CTX_FMT_AARCH64) &&
 	    !arm_smmu_has_secure_vmid(smmu_domain) &&
-	    arm_smmu_is_static_cb(smmu)) {
+	    arm_smmu_is_static_cb(smmu) && (cfg->cbndx != 21)) {
 		ret = msm_tz_set_cb_format(smmu->sec_id, cfg->cbndx);
 	}
 	return ret;
@@ -3443,6 +3443,7 @@ static int arm_smmu_domain_set_attr(struct iommu_domain *domain,
 			WARN(1, "secure vmid already set!");
 			break;
 		}
+
 		smmu_domain->secure_vmid = *((int *)data);
 		break;
 	case DOMAIN_ATTR_UPSTREAM_IOVA_ALLOCATOR:
@@ -3994,7 +3995,8 @@ static int arm_smmu_alloc_cb(struct iommu_domain *domain,
 	}
 
 	if (cb >= 0 && arm_smmu_is_static_cb(smmu)) {
-		smmu_domain->slave_side_secure = true;
+		if (cb != 21)
+			smmu_domain->slave_side_secure = true;
 
 		if (arm_smmu_is_slave_side_secure(smmu_domain))
 			bitmap_set(smmu->secure_context_map, cb, 1);
